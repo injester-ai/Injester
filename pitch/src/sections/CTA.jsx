@@ -48,10 +48,10 @@ export default function CTA() {
 
         {/* Link cards */}
         <div className="cta-cards">
-          <a href="https://injester.lol" target="_blank" rel="noopener noreferrer" className="cta-card">
-            <span className="card-badge mono badge-green">LIVE DEMO</span>
-            <span className="card-title">injester.lol</span>
-            <span className="card-desc">Try the full pipeline — paste any URL and watch the transformation</span>
+          <a href="https://cerebralvalley.ai/e/nebius-build-sf/hackathon/gallery" target="_blank" rel="noopener noreferrer" className="cta-card">
+            <span className="card-badge mono badge-green">1ST PLACE</span>
+            <span className="card-title">Nebius.build Winner</span>
+            <span className="card-desc">First place at Cerebral Valley's Nebius.build hackathon in San Francisco</span>
             <span className="card-arrow">→</span>
           </a>
           <a href="https://www.agentwebprotocol.org/" target="_blank" rel="noopener noreferrer" className="cta-card">
