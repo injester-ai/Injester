@@ -1,22 +1,18 @@
-FROM python:3.12-slim
+# Microsoft's Playwright image ships Python + Node + all system deps for
+# chromium/webkit/firefox. Saves ~5 min of apt-get on every build vs
+# installing on top of python:3.12-slim.
+FROM mcr.microsoft.com/playwright/python:v1.48.0-jammy
 
 WORKDIR /app
-
-# Install system deps for Playwright
-RUN apt-get update && apt-get install -y \
-    wget \
-    gnupg \
-    && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright browsers
-RUN playwright install --with-deps chromium
+# Install Playwright browsers only (system deps already present in base image)
+RUN playwright install chromium
 
 COPY . .
 
-# Create generated directory
 RUN mkdir -p generated
 
 EXPOSE 8000

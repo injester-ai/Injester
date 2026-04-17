@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { wsUrlWithKey } from '../config'
 
 export default function AgentSection({ visible, active, taskResults }) {
   const [screenshot, setScreenshot] = useState(null)
@@ -19,7 +20,7 @@ export default function AgentSection({ visible, active, taskResults }) {
     if (!active) return
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const ws = new WebSocket(`${protocol}//${window.location.host}/ws/agent`)
+    const ws = new WebSocket(wsUrlWithKey("/ws/agent"))
     wsRef.current = ws
 
     ws.onopen = () => setConnected(true)

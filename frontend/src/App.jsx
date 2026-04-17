@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
+import { API_BASE, WS_BASE, authHeaders, wsUrlWithKey } from './config'
 import HeroHeader from './components/HeroHeader'
 import ProblemSection from './components/ProblemSection'
 import ProcessTimeline from './components/ProcessTimeline'
@@ -61,9 +62,9 @@ function App() {
 
   const fetchScreenshot = useCallback(async (url) => {
     try {
-      const res = await fetch('/api/screenshot', {
+      const res = await fetch(`${API_BASE}/api/screenshot`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ url }),
       })
       const data = await res.json()
@@ -78,7 +79,7 @@ function App() {
   // Connect WebSocket for real-time phase updates
   const connectDemoWs = useCallback(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const ws = new WebSocket(`${protocol}//${window.location.host}/ws/agent`)
+    const ws = new WebSocket(wsUrlWithKey("/ws/agent"))
     wsRef.current = ws
 
     ws.onmessage = (event) => {
@@ -117,9 +118,9 @@ function App() {
     try {
       // Step 1: Generate optimized HTML (includes Karpathy loop — streams via WS)
       setPhase('optimizing')
-      const genRes = await fetch('/api/generate', {
+      const genRes = await fetch(`${API_BASE}/api/generate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ url, site_type: siteType, trip_details: tripDetails, max_iterations: maxIterations, objective }),
       })
       const genData = await genRes.json()
@@ -144,9 +145,9 @@ function App() {
       const customTasks = genData.agent_tasks || null
 
       setPhase('agent_running_raw')
-      const rawAgentRes = await fetch('/api/run-agent', {
+      const rawAgentRes = await fetch(`${API_BASE}/api/run-agent`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ url, site_type: siteType, custom_tasks: customTasks, trip_details: tripDetails }),
       })
       const rawAgentData = await rawAgentRes.json()
@@ -155,9 +156,9 @@ function App() {
 
       // Step 3: Run agent on optimized site
       setPhase('agent_running_optimized')
-      const optAgentRes = await fetch('/api/run-agent', {
+      const optAgentRes = await fetch(`${API_BASE}/api/run-agent`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           url: `${window.location.origin}${genData.generated_url}`,
           site_type: siteType,
@@ -187,9 +188,9 @@ function App() {
     const ws = connectDemoWs()
 
     try {
-      const demoRes = await fetch('/api/demo', {
+      const demoRes = await fetch(`${API_BASE}/api/demo`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ site_type: siteType, max_iterations: maxIterations, trip_details: tripDetails }),
       })
       const data = await demoRes.json()
