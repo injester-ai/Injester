@@ -11,7 +11,7 @@ from app.agent import run_agent
 from app.auto_tasks import generate_agent_tasks, generate_questions
 from app.benchmark import score_content
 from app.screenshot import capture_screenshot
-from app.config import BENCHMARK_QUESTIONS, DEMO_URLS
+from app.config import BENCHMARK_QUESTIONS, DEMO_URLS, PUBLIC_BASE_URL
 from app.extractor import extract_url
 from app.html_generator import generate_optimized_html
 from app.karpathy_loop import run_loop
@@ -283,7 +283,7 @@ def api_ingest(req: LoopRequest):
         "optimized_data": loop_result["best_result"]["optimized"],
         "generated_page": {
             "url": html_result["served_url"],
-            "full_url": f"http://localhost:8000{html_result['served_url']}",
+            "full_url": f"{PUBLIC_BASE_URL}{html_result['served_url']}",
             "html_length": html_result["html_length"],
         },
         "comparison": {
@@ -375,7 +375,7 @@ async def api_demo(req: DemoRequest):
     })
 
     # Phase: run both agents concurrently
-    optimized_url = f"http://localhost:8000{generated_url}"
+    optimized_url = f"{PUBLIC_BASE_URL}{generated_url}"
     await agent_event_callback({"type": "demo_phase", "phase": "agent_running_raw", "url": proxy_url})
 
     raw_agent, optimized_agent = await asyncio.gather(
