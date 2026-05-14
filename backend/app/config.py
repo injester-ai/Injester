@@ -10,6 +10,11 @@ NEBIUS_MODEL = os.getenv("NEBIUS_MODEL", "meta-llama/Meta-Llama-3.1-70B-Instruct
 # Fast model for agent selector tasks (doesn't need large model for CSS selectors)
 NEBIUS_AGENT_MODEL = os.getenv("NEBIUS_AGENT_MODEL", NEBIUS_MODEL)
 
+# Public base URL for self-referential links to generated/served HTML.
+# Local dev default works with `uvicorn ... --port 8000`; production must set
+# PUBLIC_BASE_URL to the externally reachable origin (e.g. https://demo.injester.com).
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "http://localhost:8000").rstrip("/")
+
 # Proxy sites — use env vars if Vishal's proxies are running, else real URLs
 PROXY_UNITED_URL = os.getenv("PROXY_UNITED_URL", "https://www.united.com/en/us")
 PROXY_AIRBNB_URL = os.getenv("PROXY_AIRBNB_URL", "https://www.airbnb.com/rooms/5769778")
