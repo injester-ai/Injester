@@ -4,8 +4,10 @@ import asyncio
 import json
 from typing import List, Optional
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from pydantic import BaseModel
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.agent import run_agent
 from app.auto_tasks import generate_agent_tasks, generate_questions
@@ -17,6 +19,12 @@ from app.html_generator import generate_optimized_html
 from app.karpathy_loop import run_loop
 from app.optimizer import optimize_content
 from app.ws import agent_event_callback, broadcast_sync
+
+# Per-IP limiter shared with main.py (registered there as app.state.limiter).
+# Defaults are conservative because every call burns Tavily and/or Nebius
+# tokens; the most expensive endpoints (loop, generate, ingest, demo) get
+# the tightest caps.
+limiter = Limiter(key_func=get_remote_address)
 
 router = APIRouter()
 
@@ -99,13 +107,15 @@ def _do_extract(url: str, use_tavily: Optional[bool]):
 
 
 @router.post("/extract")
-def api_extract(req: IngestRequest):
+@limiter.limit("20/hour")
+def api_extract(request: Request, req: IngestRequest):
     """Step 1: Extract clean content from URL."""
     return _do_extract(req.url, req.use_tavily)
 
 
 @router.post("/optimize")
-def api_optimize(req: IngestRequest):
+@limiter.limit("10/hour")
+def api_optimize(request: Request, req: IngestRequest):
     """Step 2: Extract + optimize via Nebius."""
     extracted = _do_extract(req.url, req.use_tavily)
     optimized = optimize_content(extracted["raw_content"])
@@ -116,7 +126,8 @@ def api_optimize(req: IngestRequest):
 
 
 @router.post("/benchmark")
-def api_benchmark(req: IngestRequest):
+@limiter.limit("10/hour")
+def api_benchmark(request: Request, req: IngestRequest):
     """Step 3: Extract + optimize + benchmark raw vs. optimized."""
     questions = _get_questions(req.questions, req.site_type)
     extracted = _do_extract(req.url, req.use_tavily)
@@ -139,7 +150,8 @@ def api_benchmark(req: IngestRequest):
 
 
 @router.post("/loop")
-def api_loop(req: LoopRequest):
+@limiter.limit("3/hour")
+def api_loop(request: Request, req: LoopRequest):
     """Step 4: Full Karpathy AutoResearch loop."""
     questions = _get_questions(req.questions, req.site_type)
     extracted = _do_extract(req.url, req.use_tavily)
@@ -168,7 +180,8 @@ def api_loop(req: LoopRequest):
 
 
 @router.post("/generate")
-def api_generate(req: LoopRequest):
+@limiter.limit("3/hour")
+def api_generate(request: Request, req: LoopRequest):
     """Full pipeline: extract → optimize → Karpathy loop → generate HTML.
 
     Returns the URL of the generated AI-optimized HTML page.
@@ -233,7 +246,8 @@ def api_generate(req: LoopRequest):
 
 
 @router.post("/ingest")
-def api_ingest(req: LoopRequest):
+@limiter.limit("3/hour")
+def api_ingest(request: Request, req: LoopRequest):
     """Full demo endpoint: extract → benchmark raw → Karpathy loop → benchmark optimized → generate HTML.
 
     Returns everything needed for the 3-panel demo in one call.
@@ -302,7 +316,8 @@ class ScreenshotRequest(BaseModel):
 
 
 @router.post("/screenshot")
-async def api_screenshot(req: ScreenshotRequest):
+@limiter.limit("20/hour")
+async def api_screenshot(request: Request, req: ScreenshotRequest):
     """Capture a screenshot of a URL using Playwright.
 
     Returns base64-encoded PNG image data.
@@ -315,7 +330,8 @@ async def api_screenshot(req: ScreenshotRequest):
 
 
 @router.post("/run-agent")
-async def api_run_agent(req: AgentRequest):
+@limiter.limit("3/hour")
+async def api_run_agent(request: Request, req: AgentRequest):
     """Run the Playwright booking agent on a URL.
 
     Streams events via WebSocket at /ws/agent.
@@ -333,7 +349,8 @@ async def api_run_agent(req: AgentRequest):
 
 
 @router.post("/demo")
-async def api_demo(req: DemoRequest):
+@limiter.limit("3/hour")
+async def api_demo(request: Request, req: DemoRequest):
     """One-click demo: extract, optimize, generate HTML, run agent on both, compare.
 
     This is the full demo flow for the hackathon pitch.
